@@ -1,5 +1,8 @@
 package com.voxloud.provisioning.controller;
 
+import java.util.Map;
+import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -9,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.voxloud.provisioning.entity.Device;
 import com.voxloud.provisioning.service.ProvisioningService;
+import com.voxloud.provisioning.utils.JsonUtils;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -23,6 +27,16 @@ public class ProvisioningController {
 
     @GetMapping("/provisioning/{mac}")
     public ResponseEntity<Device> getDeviceByMac(@PathVariable String mac) {
-        return provisioningService.getProvisioningFile(mac).map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
+        Optional<Device> optionalDevice = provisioningService.getProvisioningFile(mac);
+        if (optionalDevice.isPresent()) {
+            if (optionalDevice.get().getOverrideFragment() != null) {
+                String overrideFragment = optionalDevice.get().getOverrideFragment();
+                Map<String, Object> dataOverride = JsonUtils.parseOverrideFragment(overrideFragment);
+                System.out.println(dataOverride.get("domain"));
+            }
+            return ResponseEntity.ok(optionalDevice.get());
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
 }
